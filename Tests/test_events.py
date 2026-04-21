@@ -68,7 +68,7 @@ class TestEvents(BaseTest):
         ))
         publish_button.click()
 
-    def atest_edit_event_details(self):
+    def test_edit_event_details(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
