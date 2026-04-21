@@ -1,3 +1,4 @@
+from concurrent.futures import wait
 from datetime import datetime, timedelta
 import unittest
 
@@ -5,25 +6,69 @@ from base_test import BaseTest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
 
 class TestEvents(BaseTest):
 
     EVENTS_URL = "https://www.greencity.cx.ua/#/greenCity/events"
 
-    # def test_create_event(self):
-    #     wait = WebDriverWait(self.driver, 10)
+    def test_create_event(self):
+        wait = WebDriverWait(self.driver, 10)
 
-    #     self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.driver.get(self.EVENTS_URL)
 
-    #     create_button = wait.until(EC.element_to_be_clickable(
-    #         (By.XPATH, "//button[contains(text(),'Створити')]")
-    #     ))
-    #     create_button.click()
+        create_button = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//button[contains(text(),'Create') or contains(text(),'Створити')]")
+        ))
+        create_button.click()
 
-    #     # далі форма...
+        event_name = self.generate_event_name()
+        title_input = wait.until(EC.visibility_of_element_located(
+            (By.XPATH, "//input[@formcontrolname='title']"))
+        )
+        title_input.send_keys(event_name)
 
-    def test_edit_event_details(self):
+        event_type = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//span[contains(@class,'mat-mdc-chip-action-label') and (normalize-space()='Environmental' or normalize-space()='Екологічний')]")
+        ))
+        event_type.click()
+
+        description_xpath= "//div[@class='ql-editor ql-blank']"
+        description_input = self.driver.find_element( By.XPATH, description_xpath)  
+        description_input.send_keys(f"Test event '{event_name}' description")
+
+        date_input = self.driver.find_element(By.XPATH, "//input[@formcontrolname='day']")
+        date_input.send_keys("25.07.2026")
+        date_input.send_keys(Keys.TAB)
+
+        start_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='startTime']")
+        start_time.send_keys("23:30")
+       
+        finish_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='finishTime']")
+        #finish_time.clear()
+        finish_time.send_keys("23:59")
+
+        self.driver.find_element(By.TAG_NAME, "body").click()
+        online_checkbox = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//label[normalize-space()='Online']")
+        ))
+       
+        online_checkbox.click()
+
+        link_input = wait.until(EC.visibility_of_element_located(
+          (By.XPATH, "//input[@formcontrolname='onlineLink']")
+        ))
+        link_input.send_keys("https://test_event.com")
+        link_input.send_keys(Keys.TAB)
+        
+        publish_button = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "//button[contains(text(),'Publish') or contains(text(),'Опублікувати')]")
+        ))
+        publish_button.click()
+
+    def atest_edit_event_details(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
@@ -110,6 +155,10 @@ class TestEvents(BaseTest):
         time_obj = datetime.strptime(current_time, "%H:%M")
         new_time = (time_obj + timedelta(minutes=1)).strftime("%H:%M")
         return new_time
+    
+    def generate_event_name(self):
+        return f"Test Event {datetime.now().strftime('%H%M%S')}"
 
 if __name__ == "__main__":
     unittest.main()
+    
