@@ -67,6 +67,16 @@ class TestEvents(BaseTest):
         (By.XPATH, "//button[contains(text(),'Publish') or contains(text(),'Опублікувати')]")
         ))
         publish_button.click()
+     
+        # дочекатися редіректу / оновлення сторінки
+        wait.until(EC.url_contains("/events"))
+
+        # знайти створену подію
+        # created_event = wait.until(EC.visibility_of_element_located(
+        #     (By.XPATH, f"//mat-card[contains(.,'{event_name}')]")
+        # ))
+        created_event = self.get_event_card(event_name)
+        #self.assertTrue(created_event.is_displayed(), "Event was not created")
 
     def test_edit_event_details(self):
         wait = WebDriverWait(self.driver, 10)
@@ -131,6 +141,44 @@ class TestEvents(BaseTest):
         )
 
         self.assertEqual(start_time.get_attribute("value"), new_time)
+    
+    def test_add_comment_to_event(self):
+        wait = WebDriverWait(self.driver, 10)
+
+        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.driver.get(self.EVENTS_URL)
+
+        comment_text = "Це тестовий коментар"
+
+        # locatecard
+        card = self.get_event_card("Eco fest")
+
+        # click on More button
+        details_button = card.find_element(
+            By.XPATH,
+            ".//button[contains(text(),'Детальніше') or contains(text(),'More')]"
+        )
+        details_button.click()
+
+        #  wait to see comment input
+        comment_input = wait.until(EC.visibility_of_element_located(
+            (By.XPATH, "//div[@class ='comment-textarea']")
+        ))
+        comment_input.send_keys(comment_text)
+
+        # click on Comment button
+        submit_button = self.driver.find_element(
+            By.XPATH,
+            "//button[contains(text(),'Коментувати') or contains(text(),'Comment')]"
+        )
+        submit_button.click()
+
+        # check that comment appears
+        new_comment = wait.until(EC.visibility_of_element_located(
+            (By.XPATH, f"//*[contains(text(),'{comment_text}')]")
+        ))
+
+        self.assertTrue(new_comment.is_displayed(), "Comment was not added")
     
     def get_event_card(self, event_name):
         wait = WebDriverWait(self.driver, 10)
