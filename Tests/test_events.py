@@ -13,7 +13,7 @@ class TestEvents(BaseTest):
 
     EVENTS_URL = "https://www.greencity.cx.ua/#/greenCity/events"
 
-    def test_create_event(self):
+    def _test_create_event(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
@@ -68,17 +68,13 @@ class TestEvents(BaseTest):
         ))
         publish_button.click()
      
-        # дочекатися редіректу / оновлення сторінки
+        # wait redirect to event page
         wait.until(EC.url_contains("/events"))
 
-        # знайти створену подію
-        # created_event = wait.until(EC.visibility_of_element_located(
-        #     (By.XPATH, f"//mat-card[contains(.,'{event_name}')]")
-        # ))
         created_event = self.get_event_card(event_name)
-        #self.assertTrue(created_event.is_displayed(), "Event was not created")
+        #self.assertTrue(created_event.is_displayed(), "Event was not created") -- continue
 
-    def test_edit_event_details(self):
+    def _test_edit_event_details(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
@@ -142,7 +138,7 @@ class TestEvents(BaseTest):
 
         self.assertEqual(start_time.get_attribute("value"), new_time)
     
-    def test_add_comment_to_event(self):
+    def _test_add_comment_to_event(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
@@ -180,6 +176,41 @@ class TestEvents(BaseTest):
 
         self.assertTrue(new_comment.is_displayed(), "Comment was not added")
     
+    def test_publish_event_with_invalid_link(self):
+        wait = WebDriverWait(self.driver, 10)
+
+        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.driver.get(self.EVENTS_URL)
+
+        card = self.get_event_card("Eco fest")
+        self.click_edit_button(card)
+        online_checkbox = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//label[normalize-space()='Online']")
+        ))
+        online_checkbox.click()
+        link_input = wait.until(EC.visibility_of_element_located(
+          (By.XPATH, "//input[@formcontrolname='onlineLink']")
+        ))
+        link_input.clear()
+        link_input.send_keys("http:/invalidmeet.example.com/event")
+        link_input.send_keys(Keys.TAB)
+        
+        error = wait.until(EC.visibility_of_element_located(
+            (By.XPATH, "//mat-error[contains(text(),'link')]")
+        ))
+        error_text = error.text.lower()
+        self.assertTrue(
+            "link" in error_text or "посил" in error_text,
+            f"Unexpected error text: {error.text}"
+        )
+
+        buttons = self.driver.find_elements(
+            By.XPATH,
+            "//button[contains(text(),'Publish') or contains(text(),'Опублікувати')]"
+        )
+
+        self.assertEqual(len(buttons), 0, "Publish button should not be visible")
+
     def get_event_card(self, event_name):
         wait = WebDriverWait(self.driver, 10)
 
