@@ -1,6 +1,7 @@
 from concurrent.futures import wait
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 import unittest
+import time
 
 from base_test import BaseTest
 from selenium.webdriver.common.by import By
@@ -13,69 +14,70 @@ class TestEvents(BaseTest):
 
     EVENTS_URL = "https://www.greencity.cx.ua/#/greenCity/events"
 
-    def _test_create_event(self):
-        wait = WebDriverWait(self.driver, 10)
+    def test_create_event(self):
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
         self.driver.get(self.EVENTS_URL)
 
-        create_button = wait.until(EC.element_to_be_clickable(
+        create_button = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[contains(text(),'Create') or contains(text(),'Створити')]")
         ))
         create_button.click()
 
         event_name = self.generate_event_name()
-        title_input = wait.until(EC.visibility_of_element_located(
+        title_input = self.wait.until(EC.visibility_of_element_located(
             (By.XPATH, "//input[@formcontrolname='title']"))
         )
         title_input.send_keys(event_name)
 
-        event_type = wait.until(EC.element_to_be_clickable(
+        event_type = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//span[contains(@class,'mat-mdc-chip-action-label') and (normalize-space()='Environmental' or normalize-space()='Екологічний')]")
         ))
         event_type.click()
-
-        description_xpath= "//div[@class='ql-editor ql-blank']"
-        description_input = self.driver.find_element( By.XPATH, description_xpath)  
-        description_input.send_keys(f"Test event '{event_name}' description")
 
         date_input = self.driver.find_element(By.XPATH, "//input[@formcontrolname='day']")
         date_input.send_keys("25.07.2026")
         date_input.send_keys(Keys.TAB)
 
         start_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='startTime']")
-        start_time.send_keys("23:30")
+        start_time.send_keys("16:30")
        
         finish_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='finishTime']")
-        #finish_time.clear()
-        finish_time.send_keys("23:59")
+        finish_time.send_keys("19:30")
 
         self.driver.find_element(By.TAG_NAME, "body").click()
-        online_checkbox = wait.until(EC.element_to_be_clickable(
+        
+        description_xpath= "//quill-editor//div[contains(@class,'ql-editor')]"
+        
+        description_input = self.driver.find_element( By.XPATH, description_xpath)  
+        description_input.click()
+        description_input.send_keys(f"Test event '{event_name}' description")
+        # self.driver.find_element(By.TAG_NAME, "body").click()
+        
+        online_checkbox = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//label[normalize-space()='Online']")
         ))
-       
         online_checkbox.click()
 
-        link_input = wait.until(EC.visibility_of_element_located(
+        link_input = self.wait.until(EC.visibility_of_element_located(
           (By.XPATH, "//input[@formcontrolname='onlineLink']")
         ))
         link_input.send_keys("https://test_event.com")
         link_input.send_keys(Keys.TAB)
         
-        publish_button = wait.until(EC.element_to_be_clickable(
+        publish_button = self.wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//button[contains(text(),'Publish') or contains(text(),'Опублікувати')]")
         ))
+        
         publish_button.click()
-     
-        # wait redirect to event page
-        wait.until(EC.url_contains("/events"))
 
+        self.wait.until(EC.invisibility_of_element_located((By.XPATH, "//input[@formcontrolname='startTime']")))
+    
         created_event = self.get_event_card(event_name)
-        #self.assertTrue(created_event.is_displayed(), "Event was not created") -- continue
+   
+        self.assertTrue(created_event.is_displayed(), "Event was not created") 
 
-    def _test_edit_event_details(self):
-        wait = WebDriverWait(self.driver, 10)
+    def test_edit_event_details(self):
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
         self.driver.get(self.EVENTS_URL)
@@ -89,18 +91,18 @@ class TestEvents(BaseTest):
         start_time_xpath= "//input[@formcontrolname='startTime']"
         finish_time_xpath= "//input[@formcontrolname='finishTime']"
        
-        start_time_input = wait.until(EC.visibility_of_element_located(
+        start_time_input = self.wait.until(EC.visibility_of_element_located(
              (By.XPATH, start_time_xpath)
          ))
         
         current_time = start_time_input.get_attribute("value")
         new_time = self.get_time_plus_one_minute(current_time)
         print(f"Current time: {current_time}, New time: {new_time}")
-        # записати новий час
+        # write new time
         start_time_input.clear()
         start_time_input.send_keys(new_time)
 
-        finish_time_input = wait.until(
+        finish_time_input = self.wait.until(
             EC.visibility_of_element_located((By.XPATH,  finish_time_xpath))
         )
 
@@ -111,11 +113,8 @@ class TestEvents(BaseTest):
         finish_time_input.send_keys(new_finish_time)
 
         description_xpath= "//div[@class='ql-editor']"
-
         description_input = self.driver.find_element( By.XPATH, description_xpath)  
-
         current_description = description_input.text
-
         new_description = current_description + " updated"
 
         description_input.clear()
@@ -124,21 +123,21 @@ class TestEvents(BaseTest):
         save_button = self.driver.find_element(By.XPATH, "//button[contains(text(),'Save') or contains(text(),'Зберегти') ]")
         save_button.click()
         
-        # дочекатися, що форма закрилась або сторінка оновилась
-        wait.until(EC.invisibility_of_element_located((By.XPATH, "//input[@formcontrolname='startTime']")))
+        # wait until save is processed and Create page is closed
+        self.wait.until(EC.invisibility_of_element_located((By.XPATH, "//input[@formcontrolname='startTime']")))
 
-        # знову відкрити редагування
+        # locate card again
         card = self.get_event_card("Eco fest")
         self.click_edit_button(card)
 
-        start_time = wait.until(
+        start_time = self.wait.until(
             EC.visibility_of_element_located(
             (By.XPATH, "//input[@formcontrolname='startTime']"))
         )
 
         self.assertEqual(start_time.get_attribute("value"), new_time)
     
-    def _test_add_comment_to_event(self):
+    def test_add_comment_to_event(self):
         wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
@@ -177,25 +176,24 @@ class TestEvents(BaseTest):
         self.assertTrue(new_comment.is_displayed(), "Comment was not added")
     
     def test_publish_event_with_invalid_link(self):
-        wait = WebDriverWait(self.driver, 10)
 
         self.login("ta_124@mailinator.com", "Qwerty_1234")
         self.driver.get(self.EVENTS_URL)
 
         card = self.get_event_card("Eco fest")
         self.click_edit_button(card)
-        online_checkbox = wait.until(EC.element_to_be_clickable(
+        online_checkbox = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//label[normalize-space()='Online']")
         ))
         online_checkbox.click()
-        link_input = wait.until(EC.visibility_of_element_located(
+        link_input = self.wait.until(EC.visibility_of_element_located(
           (By.XPATH, "//input[@formcontrolname='onlineLink']")
         ))
         link_input.clear()
         link_input.send_keys("http:/invalidmeet.example.com/event")
         link_input.send_keys(Keys.TAB)
         
-        error = wait.until(EC.visibility_of_element_located(
+        error = self.wait.until(EC.visibility_of_element_located(
             (By.XPATH, "//mat-error[contains(text(),'link')]")
         ))
         error_text = error.text.lower()
@@ -212,16 +210,14 @@ class TestEvents(BaseTest):
         self.assertEqual(len(buttons), 0, "Publish button should not be visible")
 
     def get_event_card(self, event_name):
-        wait = WebDriverWait(self.driver, 10)
 
         card_xpath = f"//mat-card[contains(.,'{event_name}')]"
 
-        return wait.until(
+        return self.wait.until(
             EC.visibility_of_element_located((By.XPATH, card_xpath))
         )    
     
     def click_edit_button(self, card):
-        wait = WebDriverWait(self.driver, 10)
 
         edit_button = card.find_element(
             By.XPATH,
@@ -237,6 +233,8 @@ class TestEvents(BaseTest):
     
     def generate_event_name(self):
         return f"Test Event {datetime.now().strftime('%H%M%S')}"
+        #return f"Test Event 11"
+    
 
 if __name__ == "__main__":
     unittest.main()
