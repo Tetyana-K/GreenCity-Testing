@@ -8,14 +8,12 @@ from selenium.webdriver.support import expected_conditions as EC
 
 class TestLogin(BaseTest):
      def test_successful_login(self):
-        wait = WebDriverWait(self.driver, 10)
-
-        # use base login method to perform login
-        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        # use base  method to perform login
+        self.login_as_user()
 
         # check avatar is displayed after login
         avatar_xpath = "//*[@id='header_user-wrp']/li"
-        avatar = wait.until(EC.visibility_of_element_located((By.XPATH, avatar_xpath)))
+        avatar = self.wait.until(EC.visibility_of_element_located((By.XPATH, avatar_xpath)))
 
         self.assertTrue(avatar.is_displayed(), "Avatar is not visible after login")
 

@@ -16,7 +16,7 @@ class TestEvents(BaseTest):
 
     def test_create_event(self):
 
-        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.login_as_user()
         self.driver.get(self.EVENTS_URL)
 
         create_button = self.wait.until(EC.element_to_be_clickable(
@@ -40,10 +40,10 @@ class TestEvents(BaseTest):
         date_input.send_keys(Keys.TAB)
 
         start_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='startTime']")
-        start_time.send_keys("16:30")
+        start_time.send_keys("19:30")
        
         finish_time = self.driver.find_element(By.XPATH, "//input[@formcontrolname='finishTime']")
-        finish_time.send_keys("19:30")
+        finish_time.send_keys("20:30")
 
         self.driver.find_element(By.TAG_NAME, "body").click()
         
@@ -52,7 +52,6 @@ class TestEvents(BaseTest):
         description_input = self.driver.find_element( By.XPATH, description_xpath)  
         description_input.click()
         description_input.send_keys(f"Test event '{event_name}' description")
-        # self.driver.find_element(By.TAG_NAME, "body").click()
         
         online_checkbox = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//label[normalize-space()='Online']")
@@ -71,7 +70,7 @@ class TestEvents(BaseTest):
         
         publish_button.click()
 
-        self.wait.until(EC.invisibility_of_element_located((By.XPATH, "//input[@formcontrolname='startTime']")))
+        self.wait_event_form_closed()
     
         created_event = self.get_event_card(event_name)
    
@@ -79,7 +78,7 @@ class TestEvents(BaseTest):
 
     def test_edit_event_details(self):
 
-        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        self.login_as_user()
         self.driver.get(self.EVENTS_URL)
         
         # locate card 
@@ -124,7 +123,7 @@ class TestEvents(BaseTest):
         save_button.click()
         
         # wait until save is processed and Create page is closed
-        self.wait.until(EC.invisibility_of_element_located((By.XPATH, "//input[@formcontrolname='startTime']")))
+        self.wait_event_form_closed()
 
         # locate card again
         card = self.get_event_card("Eco fest")
@@ -138,9 +137,8 @@ class TestEvents(BaseTest):
         self.assertEqual(start_time.get_attribute("value"), new_time)
     
     def test_add_comment_to_event(self):
-        wait = WebDriverWait(self.driver, 10)
-
-        self.login("ta_124@mailinator.com", "Qwerty_1234")
+        
+        self.login_as_user()
         self.driver.get(self.EVENTS_URL)
 
         comment_text = "Це тестовий коментар"
@@ -233,8 +231,13 @@ class TestEvents(BaseTest):
     
     def generate_event_name(self):
         return f"Test Event {datetime.now().strftime('%H%M%S')}"
-        #return f"Test Event 11"
     
+    def wait_event_form_closed(self):
+        self.wait.until(
+            EC.invisibility_of_element_located(
+                (By.XPATH, "//input[@formcontrolname='startTime']")
+            )
+        )    
 
 if __name__ == "__main__":
     unittest.main()
